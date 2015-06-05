@@ -13,7 +13,7 @@ A parser and resulting dataset for USDA plant hardiness zones.  It uses the ZIP-
 
 ## Use the API
 
-[The `/api/` directory](https://github.com/waldoj/frostline/tree/master/api) of this repo constitutes a lightweight API. For example, request [`https://raw.githubusercontent.com/waldoj/frostline/master/api/20001.json`](https://raw.githubusercontent.com/waldoj/frostline/master/api/20001.json) to get the zone data for Washington DC:
+[The `/api/` directory](https://github.com/waldoj/frostline/tree/gh-pages/api) of the `gh-pages` branch of this repo constitutes a lightweight API. For example, request [`https://waldoj.github.io/frostline/api/20001.json`](https://waldoj.github.io/frostline/api/20001.json) to get the zone data for Washington DC:
 
 ```json
 {
