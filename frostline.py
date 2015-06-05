@@ -138,5 +138,38 @@ def main():
     # Close our database connection.
     db.close()
 
+# Export the results to JSON, to create a static API.
+def create_api():
+
+    # Connect to the database, which we already know exists.
+    db = sqlite3.connect('hardiness_zones.sqlite')
+    db.row_factory = sqlite3.Row
+
+    # Create a SQLite cursor.
+    cursor = db.cursor()
+
+    # Create the /api/ directory, if it doesn't exist.
+    if not os.path.exists('api'):
+        os.makedirs('api')
+
+    # Iterate through all records.
+    cursor.execute("SELECT zipcode, response, latitude, longitude FROM zip")
+    for zip in cursor:
+
+        # Save the record to a file.
+        file = open("api/" + zip['zipcode'] + ".json", 'w')
+
+        # Hideously manipulate the dict.
+        record = dict()
+        record['coordinates'] = dict()
+        record['coordinates']['lat'] = zip['latitude']
+        record['coordinates']['lon'] = zip['longitude']
+        record['zone'] = zip['zone']
+
+        # Write the contents and close the file.
+        file.write(json.dumps(record))
+        file.close()
+
 if __name__ == "__main__":
     main()
+    create_api()
