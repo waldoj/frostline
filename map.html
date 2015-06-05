@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Frostline</title>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.3/leaflet.css" />
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.3/leaflet.js"></script>
+	<script src="https://code.jquery.com/jquery-2.1.4.min.js"></script>
+	<style>body { margin: 0; padding: 0; }</style>
+</head>
+<body>
+	<div id="map" style="width: 100%; height: 400px"></div>
+
+	<script>
+		$('#map').height($(window).height());
+
+		var map = L.map('map').setView([39.74739, -97.5], 4);
+
+		// based on the Leafleft GeoJSON example.
+		L.tileLayer('https://{s}.tiles.mapbox.com/v3/{id}/{z}/{x}/{y}.png', {
+			maxZoom: 18,
+			attribution: 'Map data &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors, ' +
+				'<a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, ' +
+				'Imagery © <a href="http://mapbox.com">Mapbox</a>',
+			id: 'examples.map-20v6611k'
+		}).addTo(map);
+
+		function getColor(z) {
+			// z ranges from 0 to 17, but few values hit 17 so we'll clip
+			// it at 13. make it range from 0 to 1.
+			z = z/13;
+			if (z > 1) z = 1;
+			if (z < .33)
+				return "rgb(" + parseInt(255*z/.33) + "," + parseInt(255*z/.33) + "," + parseInt(255*(1-z/.33)) + ")";
+			else if (z < .66)
+				return "rgb(" + parseInt(255-255*(z-.33)/.66) + ",255,0)";
+			else
+				return "rgb(" + parseInt(255*((z-.66)/.33)) + "," + parseInt(255-255*((z-.66)/.33)) + ",0)";
+		}
+
+		$.getJSON('map.geojson', function(data) {
+			L.geoJson([data], {
+				style: function(feature) { return {
+					fillColor: getColor((feature.properties.a+feature.properties.b+feature.properties.c)/3),
+					weight: 0,
+					fillOpacity: .5
+				} }
+			}).addTo(map);
+		})
+
+	</script>
+</body>
+</html>
