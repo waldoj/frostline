@@ -4,5 +4,5 @@ A parser and resulting dataset for USDA plant hardiness zones.  It uses the ZIP-
 
 ## Download the Resulting Data
 
-* [hardiness_zones.csv](CSV) (1 MB)
-* [hardiness_zones.sqlite](SQLite) (1.8 MB)
+* [CSV](hardiness_zones.csv) (1 MB)
+* [SQLite](hardiness_zones.sqlite) (1.8 MB)
