@@ -6,3 +6,11 @@ A parser and resulting dataset for USDA plant hardiness zones.  It uses the ZIP-
 
 * [CSV](hardiness_zones.csv) (1 MB)
 * [SQLite](hardiness_zones.sqlite) (1.8 MB)
+
+## Map
+
+You can generate a nice interactive map of the data. First convert the data to GeoJSON:
+
+	node map.js
+
+This creates `map.geojson`. Then view `map.html` in a browser. You will need to serve the map on a simple web server (not at a file: URL) so that it can access the GeoJSON file on disk (file: URLs block access to other files).
