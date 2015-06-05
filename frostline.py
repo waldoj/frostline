@@ -43,6 +43,12 @@ def main():
     cursor.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='zip'")
     exists = cursor.fetchone()
 
+    # If the table doesn't exist, create it.
+    if exists is None:
+        cursor.execute("CREATE TABLE zip(zipcode TEXT PRIMARY KEY NOT NULL, "
+            + "zone TEXT, city TEXT, state TEXT, latitude INTEGER, longitude INTEGER)")
+        db.commit()
+
     # Start iterating through our list of ZIP codes.
     with open(zipfile, 'rb') as csvfile:
 
