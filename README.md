@@ -4,7 +4,7 @@ A parser and resulting dataset for USDA plant hardiness zones.  It uses the ZIP-
 
 ![Map of the U.S.](https://cloud.githubusercontent.com/assets/656758/8011208/c1b7ea48-0b84-11e5-967b-a496cdfe0fe0.jpg)
 
-## Using it
+## Run It Yourself
 
 `./frostline.py -z zipcodes.csv`
 
@@ -29,10 +29,12 @@ A parser and resulting dataset for USDA plant hardiness zones.  It uses the ZIP-
 
 Use whatever ZIP you like in place of `20001`.
 
-## Map
+## Map The Data
 
 You can generate a nice interactive map of the data. First convert the data to GeoJSON:
 
-	node map.js
+```
+node map.js
+```
 
-This creates `map.geojson`. Then view `map.html` in a browser. You will need to serve the map on a simple web server (not at a file: URL) so that it can access the GeoJSON file on disk (file: URLs block access to other files). That was used by Josh Tauberer to generate the above map.
+This creates `map.geojson`. Then view `map.html` in a browser. You will need to serve the map on a simple web server (not at a `file://` URL) so that it can access the GeoJSON file on disk (`file://` URLs block access to other files). That was used by Josh Tauberer to generate the above map.
