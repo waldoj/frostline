@@ -38,3 +38,7 @@ node map.js
 ```
 
 This creates `map.geojson`. Then view `map.html` in a browser. You will need to serve the map on a simple web server (not at a `file://` URL) so that it can access the GeoJSON file on disk (`file://` URLs block access to other files). That was used by Josh Tauberer to generate the above map.
+
+## Plant Hardiness Zones
+
+This is the national standard for knowing which plants will grow where. It’s determined based on the average annual minimum temperature over the prior 30 years, with each zone comprising a 10°F band. There are 26 zones in all. The standard was developed by the U.S., but other countries have adopted the same standard. Companies that sell plants, seeds, roots, and bulbs  (e.g., Burpee) use these zones to help customers understand what will thrive in their area, and to decide when to ship orders to help them to thrive. For more information, see [the Wikipedia entry](http://en.wikipedia.org/wiki/Hardiness_zone) or the [USDA’s explanatoin](http://planthardiness.ars.usda.gov/PHZMWeb/About.aspx).
