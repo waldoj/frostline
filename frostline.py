@@ -79,10 +79,14 @@ def main():
             # Assemble the URL.
             request_url = 'http://planthardiness.ars.usda.gov/PHZMWeb/ZipProxy.ashx?' \
                 + url_parameters
+            print request_url
+
+            req = urllib2.Request(request_url)
+            req.add_header('Referer', 'http://planthardiness.ars.usda.gov/PHZMWeb/')
 
             # Fetch that URL.
             try:
-                response = urllib2.urlopen(request_url)
+                response = urllib2.urlopen(req)
             except urllib2.URLError as e:
                 sys.stdout.write('‽')
                 sys.stdout.flush()
