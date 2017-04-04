@@ -16,131 +16,65 @@ import argparse
 import time
 
 parser = argparse.ArgumentParser(
-    description="A scraper for USDA Plant Hardiness Zone data",
+    description="A tool to turn USDA Plant Hardiness Zone files into an API",
     epilog="https://github.com/waldoj/frostline/")
-parser.add_argument('-z', '--zipfile', help="the ZIP Code CSV file", metavar="zips.csv", required=True)
 parser.add_argument('-v', '--verbose', help="verbose mode", action='store_true')
 args = parser.parse_args()
 verbose = args.verbose
-zipfile = args.zipfile
+
 
 def main():
 
-    # We keep track of how many consecutive errors the API throws, to stop if there are too many.
-    api_error_count = 0
-
-   # Make sure that we can connect to the database.
+    # Make sure that we can connect to the database.
     try:
         db = sqlite3.connect('hardiness_zones.sqlite')
     except sqlite3.error, e:
         print "Count not connect to SQLite, with error %s:" % e.args[0]
         sys.exit(1)
 
+    # See if we already have the source data.
+    source_data = 'zones.csv'
+    if os.path.isfile('zones.csv'):
+        pass
+    else:
+        zonefile = urllib.URLopener()
+        try:
+                zonefile.retrieve("http://www.prism.oregonstate.edu/projects/public/phm/phm_us_zipcode.csv", "zones.csv")
+        except Exception,e:
+            print "Fatal error: Could not download source file. ", e
+            sys.exit()
+
     # Create a SQLite cursor.
     cursor = db.cursor()
 
-    # See if the zip table already exists.
+    # See if the zip database table already exists.
     cursor.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='zip'")
     exists = cursor.fetchone()
 
-    # If the table doesn't exist, create it.
+    # If the database table doesn't exist, create it.
     if exists is None:
         cursor.execute("CREATE TABLE zip(zipcode TEXT PRIMARY KEY NOT NULL, "
-            + "zone TEXT, city TEXT, state TEXT, latitude INTEGER, longitude INTEGER)")
+            + "zone TEXT, temperatures TEXT, city TEXT, state TEXT, latitude INTEGER, longitude INTEGER)")
         db.commit()
 
-    # Start iterating through our list of ZIP codes.
-    with open(zipfile, 'rb') as csvfile:
+        # Import the CSV file into the database
+        with open('zipcodes.csv','rb') as zips:
+            dr = csvkit.DictReader(zips)
+            to_db = [(i['zipcode'], i['city'], i['state'], i['latitude'], i['longitude']) for i in dr]
+        cursor.executemany("INSERT INTO zip (zipcode, city, state, latitude, longitude) VALUES (?, ?, ?, ?, ?);", to_db)
+        db.commit()
 
-        # Iterate through the lines in our input file.
-        csvreader = csvkit.DictReader(csvfile)
-        for record in csvreader:
-
-            # Note the time at which we started reading this record, to make sure that we don't hit
-            # the API more than per second.
-            start_time = time.time()
-
-            # If this ZIP is already stored in the database, skip to the next ZIP.
-            cursor.execute("SELECT 1 FROM zip WHERE zipcode = ?", (record['zipcode'],))
-            exists = cursor.fetchone()
-            if exists is not None:
-                if verbose:
-                    print "ZIP already retrieved"
-                else:
-                    sys.stdout.write('…')
-                    sys.stdout.flush()
-                continue
-
-            # Encode the field as a key/value pair, for our query.
-            url_parameters = {}
-            url_parameters['ZipCode'] = record['zipcode']
-            url_parameters = urllib.urlencode(url_parameters)
-
-            # Assemble the URL.
-            request_url = 'http://planthardiness.ars.usda.gov/PHZMWeb/ZipProxy.ashx?' \
-                + url_parameters
-            print request_url
-
-            req = urllib2.Request(request_url)
-            req.add_header('Referer', 'http://planthardiness.ars.usda.gov/PHZMWeb/')
-
-            # Fetch that URL.
-            try:
-                response = urllib2.urlopen(req)
-            except urllib2.URLError as e:
-                sys.stdout.write('‽')
-                sys.stdout.flush()
-                api_error_count += 1
-                if api_error_count == 10:
-                    print "Too many API errors: halting."
-                    sys.exit()
-                continue
-
-            # Since this worked, reset the API error count to zero.
-            api_error_count = 0
-
-            # Get the text returned by the server.
-            hardiness = response.read()
-
-            # If no zone data was returned by the server, then report this as a failure and skip to
-            # the next ZIP.
-            if "Zone " not in hardiness:
-                if verbose:
-                    print "API returned no data for that ZIP"
-                    print hardiness
-                else:
-                    sys.stdout.write('✗')
-                    sys.stdout.flush()
-                api_error_count += 1
-                if api_error_count == 10:
-                    print "Too many API errors: halting."
-                    sys.exit()
-                continue
-
-            # The server returns a string like "Zone 12b :  55 to 60  (F)" -- we only want the
-            # "12b" bit.
-            tmp = hardiness.split()
-            hardiness = tmp[1]
-
-            # Insert the ZIP, hardiness zone, city, state, latitude, and longitude into the DB.
-            cursor.execute("INSERT INTO zip VALUES(?, ?, ?, ?, ?, ?)", \
-                (record['zipcode'], hardiness, record['city'], record['state'], \
-                record['latitude'], record['longitude']))
-            db.commit()
-
-            # Report success to the terminal.
-            if verbose:
-                print "ZIP " + record['zipcode'] + " hardiness " + hardiness
-            else:
-                sys.stdout.write('✓')
-                sys.stdout.flush()
-
-            # Pause long enough that 1 second has elapsed for this loop, to avoid hammering the API.
-            if time.time() - start_time < 1:
-                time.sleep(1 - (time.time() - start_time))
+    # Now load our climate data.
+    with open('zones.csv','rb') as zips:
+        dr = csvkit.DictReader(zips)
+        to_db = [(i['zone'], i['trange'], i['zipcode']) for i in dr]
+    cursor.executemany("UPDATE zip SET zone=?, temperatures=? WHERE zipcode=?;", to_db)
+    db.commit()
+    db.close()
 
     # Close our database connection.
     db.close()
+
 
 # Export the results to JSON, to create a static API.
 def create_api():
@@ -157,7 +91,7 @@ def create_api():
         os.makedirs('api')
 
     # Iterate through all records.
-    cursor.execute("SELECT zipcode, response, latitude, longitude FROM zip")
+    cursor.execute("SELECT zipcode, zone, temperatures, latitude, longitude FROM zip")
     for zip in cursor:
 
         # Save the record to a file.
@@ -169,6 +103,7 @@ def create_api():
         record['coordinates']['lat'] = zip['latitude']
         record['coordinates']['lon'] = zip['longitude']
         record['zone'] = zip['zone']
+        record['temperature_range'] = zip['temperatures']
 
         # Write the contents and close the file.
         file.write(json.dumps(record))
