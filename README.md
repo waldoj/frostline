@@ -1,12 +1,16 @@
 # Frostline
 
-A parser for USDA plant hardiness zones.  It uses the ZIP-querying API built into [the U.S. Department of Agriculture’s Plant Hardiness Zone website](http://planthardiness.ars.usda.gov/) (e.g., `http://planthardiness.ars.usda.gov/PHZMWeb/ZipProxy.ashx?ZipCode=55555`) to retrieve the plant hardiness zone data for every ZIP code, one by one. Rate-limited to 1 query per second, this takes a little over 8 hours to run.
+A parser for USDA plant hardiness zones. That data is provided in bulk by [the PRISM Climate Group at Oregon State University](http://www.prism.oregonstate.edu/projects/plant_hardiness_zones.php). This combines the four bulk files with ZIP location data, and creates a JSON file for each ZIP, functioning as a static API.
+
+Note that _not every U.S. ZIP code is part of this dataset._ The source data, provided by PRISM, simply does not include every ZIP.
 
 ![Map of the U.S.](https://cloud.githubusercontent.com/assets/656758/8011208/c1b7ea48-0b84-11e5-967b-a496cdfe0fe0.jpg)
 
+(Per PRISM Climate Group's Terms of Service, note that the above map is not the official USDA Plant Hardiness Zone Map.)
+
 ## Run It Yourself
 
-`./frostline.py -z zipcodes.csv`
+`./frostline.py`
 
 ## Map The Data
 
