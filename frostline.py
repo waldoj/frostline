@@ -37,12 +37,19 @@ def main():
     if os.path.isfile('zones.csv'):
         pass
     else:
+        sources = ['http://www.prism.oregonstate.edu/projects/public/phm/phm_us_zipcode.csv',
+                    'http://www.prism.oregonstate.edu/projects/public/phm/phm_ak_zipcode.csv',
+                    'http://www.prism.oregonstate.edu/projects/public/phm/phm_hi_zipcode.csv',
+                    'http://www.prism.oregonstate.edu/projects/public/phm/phm_pr_zipcode.csv']
         zonefile = urllib.URLopener()
-        try:
-                zonefile.retrieve("http://www.prism.oregonstate.edu/projects/public/phm/phm_us_zipcode.csv", "zones.csv")
-        except Exception,e:
-            print "Fatal error: Could not download source file. ", e
-            sys.exit()
+        i=1
+        for source in sources:
+            try:
+                zonefile.retrieve(source, str(i) + '.csv')
+            except Exception,e:
+                print "Fatal error: Could not download source file. ", e
+                sys.exit()
+            i += 1
 
     # Create a SQLite cursor.
     cursor = db.cursor()
@@ -65,12 +72,14 @@ def main():
         db.commit()
 
     # Now load our climate data.
-    with open('zones.csv','rb') as zips:
-        dr = csvkit.DictReader(zips)
-        to_db = [(i['zone'], i['trange'], i['zipcode']) for i in dr]
-    cursor.executemany("UPDATE zip SET zone=?, temperatures=? WHERE zipcode=?;", to_db)
-    db.commit()
-    db.close()
+    zone_files = [1, 2, 3, 4]
+    for zone_file in zone_files:
+        with open(str(zone_file) + '.csv','rb') as zips:
+            dr = csvkit.DictReader(zips)
+            to_db = [(i['zone'], i['trange'], i['zipcode']) for i in dr]
+        cursor.executemany("UPDATE zip SET zone=?, temperatures=? WHERE zipcode=?;", to_db)
+        db.commit()
+        os.remove(str(zone_file) + '.csv')
 
     # Close our database connection.
     db.close()
