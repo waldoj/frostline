@@ -1,0 +1,12 @@
+language: python
+deploy:
+  provider: s3
+  bucket: phzmapi.org
+  region: us-easte-1
+  acl: public_read
+  on:
+    repo: waldoj/frostline
+    branch: master
+  skip_cleanup: true
+  local_dir: api/
+  access_key_id: AKIAI57KQU7C2AZT5MEQ
