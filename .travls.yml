@@ -1,4 +1,7 @@
 language: python
+before_install: sudo apt-get install python-dev python-pip python-setuptools build-essential
+install: pip install csvkit
+script: ./frostline.py
 deploy:
   provider: s3
   bucket: phzmapi.org
