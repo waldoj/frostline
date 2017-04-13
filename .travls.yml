@@ -2,7 +2,7 @@ language: python
 deploy:
   provider: s3
   bucket: phzmapi.org
-  region: us-easte-1
+  region: us-east-1
   acl: public_read
   on:
     repo: waldoj/frostline
