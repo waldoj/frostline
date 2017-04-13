@@ -12,4 +12,4 @@ deploy:
     branch: master
   skip_cleanup: true
   local_dir: api/
-  access_key_id: AKIAI57KQU7C2AZT5MEQ
+  access_key_id: AKIAIGBGXKOUPILDAZ6Q
