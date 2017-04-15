@@ -1,6 +1,7 @@
 #!/bin/bash
 
 FILE_LENGTH="$(wc -l zipcodes.csv |cut -d " " -f 4)"
+echo "Preliminary file length is $FILE_LENGTH"
 FILE_LENGTH="$((FILE_LENGTH - 1))"
 DIR_COUNT="$(ls api/ |wc -l)"
 
