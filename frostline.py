@@ -14,6 +14,7 @@ import urllib2
 import json
 import argparse
 import time
+import yaml
 
 parser = argparse.ArgumentParser(
     description="A tool to turn USDA Plant Hardiness Zone files into an API",
@@ -86,7 +87,7 @@ def main():
 
 
 # Export the results to JSON, to create a static API.
-def create_api():
+def create_zip_api():
 
     # Connect to the database, which we already know exists.
     db = sqlite3.connect('hardiness_zones.sqlite')
@@ -118,6 +119,33 @@ def create_api():
         file.write(json.dumps(record))
         file.close()
 
+# Establish stub JSON files for each zone, to be aliased for coordinates.
+def create_zone_json():
+
+    # We need the YAML listing PHZs.
+    source_data = 'zones.yml'
+    if os.path.isfile(source_data):
+        zones = open(source_data, 'r')
+    else:
+        print source_data + "could not be found."
+        sys.exit(1)
+
+    # Create the /api/ directory, if it doesn't exist.
+    if not os.path.exists('api'):
+        os.makedirs('api')
+
+    # Iterate through each PHZ and generate a JSON file.
+    for zone, temps in yaml.load(zones).items():
+        phz = {}
+        phz['zone'] = zone;
+        phz['temperature_range'] = temps;
+        
+        # Write this to a stub file.
+        file = open('api/' + zone + ".json", 'w')
+        file.write(json.dumps(phz))
+        file.close()
+
 if __name__ == "__main__":
     main()
-    create_api()
+    create_zip_api()
+    create_zone_json()
