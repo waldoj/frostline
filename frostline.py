@@ -34,7 +34,7 @@ def main():
 
     # See if we already have the source data.
     source_data = 'zones.csv'
-    if os.path.isfile('zones.csv'):
+    if os.path.isfile(source_data):
         pass
     else:
         sources = ['http://www.prism.oregonstate.edu/projects/public/phm/phm_us_zipcode.csv',
