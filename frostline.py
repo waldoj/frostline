@@ -86,7 +86,7 @@ def main():
     db.close()
 
 
-# Export the results to JSON, to create a static API.
+# Export the ZIP data to JSON, to create a static API.
 def create_zip_api():
 
     # Connect to the database, which we already know exists.
@@ -145,7 +145,80 @@ def create_zone_json():
         file.write(json.dumps(phz))
         file.close()
 
+# Convert an ASC file to a seris of filesystem aliases (symbolic links).
+def create_coord_api(asc_file):
+
+    if os.path.isfile(asc_file) is False:
+        print asc_file + "could not be found."
+        sys.exit(1)
+
+    # Read in PHZ data.
+    zones = {}
+    phz = open('zones.yml', 'r')
+    for zone, temps in yaml.load(phz).items():
+        zones[zone] = {}
+        temps = temps.split(' to ')
+        zones[zone]['low'] = temps[0]
+        zones[zone]['high'] = temps[1]
+
+    with open(asc_file) as f:
+
+        # Iterate through each row in the file.
+        row_num=0
+        map = {}
+        for row in enumerate(f):
+
+            # Remove cruft.
+            fields = row[1].rstrip()
+
+            # Extract header data about the file.
+            if row_num < 6:
+                value = fields.split(' ')[1]
+                if row_num == 2:
+                    map['x_corner'] = float(value)
+                elif row_num == 3:
+                    map['y_corner'] = float(value)
+                elif row_num == 4:
+                    map['cell_size'] = float(value)
+                elif row_num == 5:
+                    map['nodata_value'] = value
+                row_num+=1
+                continue
+
+            # Now parse actual data.
+            column_num=0
+            fields = fields.split(' ')
+            for field in fields:
+
+                # If this field has no value, skip it.
+                if field == map['nodata_value']:
+                    continue
+                
+                # Figure out what zone this field is in.
+                place = {}
+                place['temp'] = (int(field) / 100 * (9/5)) + 32
+                for zone, temps in zones.items():
+                    if float(place['temp']) >= float(temps['low']) and float(place['temp']) <= float(temps['high']):
+                        place['zone'] = zone
+                        break
+
+                # Assign this field to a latitude and longitude.
+                place['lon'] = round(map['x_corner'] + map['cell_size'] * column_num, 2)
+                place['lat'] = round(map['y_corner'] + map['cell_size'] * row_num, 2)
+
+                # Create a symlink, naming the file for the coordinates.
+                filename = 'api/' + str(place['lon']) + ',' + str(place['lat']) + '.json'
+                try:
+                    os.symlink(place['zone'] + '.json', filename)
+                except OSError:
+                    pass
+
+                column_num+=1
+
+            row_num+=1
+
 if __name__ == "__main__":
     main()
     create_zip_api()
     create_zone_json()
+    create_coord_api('phm_us_grid/phm_us.asc')
