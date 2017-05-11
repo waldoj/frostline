@@ -2,3 +2,4 @@ api/
 zones.csv
 *.sqlite
 phm_us_grid/
+phm_us_*/
