@@ -4,6 +4,8 @@ A parser for USDA plant hardiness zones. That data is provided in bulk by [the P
 
 Note that _not every U.S. ZIP code is part of this dataset._ The source data, provided by PRISM, simply does not include every ZIP.
 
+The resulting data is used to create an API at phzmapi.org, in format `ZIPCODE.json`, e.g. [`https://phzmapi.org/20001.json`](https://phzmapi.org/20001.json).
+
 ![Map of the U.S.](https://cloud.githubusercontent.com/assets/656758/8011208/c1b7ea48-0b84-11e5-967b-a496cdfe0fe0.jpg)
 
 (Per PRISM Climate Group's Terms of Service, note that the above map is not the official USDA Plant Hardiness Zone Map.)
