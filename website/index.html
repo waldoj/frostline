@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Plant Hardiness Zone Map API</title>
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" type="text/css" media="screen" />
+<style>
+	#json {
+		clear: left;
+		background-color: #eee;
+		padding: 1em;
+		width: 50%;
+		min-width: 200px;
+		border: 1px solid #999;
+		margin-top: 2em;
+		display: none;
+		font-family: monospace;
+	}
+</style>
+</head>
+
+<body>
+
+<header>
+	<h1>Plant Hardiness Zone Map API</h1>
+</header>
+
+<main>
+
+	<p>Queries in format <code>https://phzmapi.org/ZIPCODE.json</code>, e.g.
+		<code><a href="https://phzmapi.org/20001.json">https://phzmapi.org/20001.json</a></code>.
+		<a href="https://github.com/waldoj/frostline/">Details on the GitHub repo</a>.</p>
+	<form>
+		<label for="zip">ZIP Code</label>
+		<input type="text" size="5" id="zip" maxlength="5" pattern="[0-9]{5}" />
+		<button type="button" id="submit">Submit</button>
+		<div id="json"></div>
+	</form>
+</main>
+
+<script src="https://code.jquery.com/jquery-3.3.1.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous"></script>
+<script>
+	$(document).ready(function(event) {
+		$("#submit").on('click', function() {
+			zip = $("#zip").val();
+			$.getJSON( "https://phzmapi.org/" + zip + ".json", function( data ) {
+				json = JSON.stringify(data);
+				$("#json").html(json);
+				$("#json").show();
+			});
+		});
+	});
+</script>
+</body>
+</html>
