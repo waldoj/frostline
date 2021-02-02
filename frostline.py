@@ -4,7 +4,6 @@
 import os
 import json
 import requests
-from collections import namedtuple
 from codecs import iterdecode
 from csv import DictReader, DictWriter
 from contextlib import closing
