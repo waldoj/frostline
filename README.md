@@ -2,9 +2,9 @@
 
 A parser for USDA plant hardiness zones. That data is provided in bulk by [the PRISM Climate Group at Oregon State University](http://www.prism.oregonstate.edu/projects/plant_hardiness_zones.php). This combines the four bulk files with ZIP location data, and creates a JSON file for each ZIP, functioning as a static API.
 
-Note that _not every U.S. ZIP code is part of this dataset._ The source data, provided by PRISM, simply does not include every ZIP.
+Note that _not every U.S. ZIP code is part of this dataset._ The PHZ source data, provided by PRISM, does not include every ZIP, and there is no complete list of the location of all ZIP codes in the PHZ source data.
 
-The resulting data is used to create an API at phzmapi.org, in format `ZIPCODE.json`, e.g. [`https://phzmapi.org/20001.json`](https://phzmapi.org/20001.json).
+The resulting data is used to create an API at phzmapi.org, in format `{ZIPCODE}.json`, e.g. [`https://phzmapi.org/20001.json`](https://phzmapi.org/20001.json).
 
 ![Map of the U.S.](https://cloud.githubusercontent.com/assets/656758/8011208/c1b7ea48-0b84-11e5-967b-a496cdfe0fe0.jpg)
 

@@ -1,123 +1,105 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import csvkit
 import os
-import errno
-import glob
-import sys
-import time
-import math
-import sqlite3
-import urllib
-import urllib2
 import json
-import argparse
-import time
+import requests
+from codecs import iterdecode
+from csv import DictReader, DictWriter
+from contextlib import closing
 
-parser = argparse.ArgumentParser(
-    description="A tool to turn USDA Plant Hardiness Zone files into an API",
-    epilog="https://github.com/waldoj/frostline/")
-parser.add_argument('-v', '--verbose', help="verbose mode", action='store_true')
-args = parser.parse_args()
-verbose = args.verbose
+zone_files = [
+    'http://www.prism.oregonstate.edu/projects/public/phm/phm_us_zipcode.csv',
+    'http://www.prism.oregonstate.edu/projects/public/phm/phm_ak_zipcode.csv',
+    'http://www.prism.oregonstate.edu/projects/public/phm/phm_hi_zipcode.csv',
+    'http://www.prism.oregonstate.edu/projects/public/phm/phm_pr_zipcode.csv'
+]
+
+
+class Coordinates:
+    def __init__(self, lat, lon):
+        self.lat = lat
+        self.lon = lon
+
+
+class ZipData:
+    def __init__(self, zone, temperature_range, coordinates):
+        self.zone = zone
+        self.temperature_range = temperature_range
+        self.coordinates = coordinates
+
+
+class CustomJSONEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, ZipData):
+            return {'zone': obj.zone, 'temperature_range': obj.temperature_range, 'coordinates': obj.coordinates}
+        if isinstance(obj, Coordinates):
+            return {'lat': obj.lat, 'lon': obj.lon}
+        return json.JSONEncoder.default(self, obj)
+
+
+def make_zip_to_zone_dict(iter_lines, zipcode_to_location):
+    return {i['zipcode']: ZipData(i['zone'], i['trange'], zipcode_to_location.get(i['zipcode']))
+            for i in DictReader(iter_lines)}
+
+
+def zone_uris_to_dict(url, zipcode_to_location):
+    with closing(requests.get(url, stream=True)) as r:
+        return make_zip_to_zone_dict(iterdecode(r.iter_lines(), 'utf-8'), zipcode_to_location)
 
 
 def main():
 
-    # Make sure that we can connect to the database.
-    try:
-        db = sqlite3.connect('hardiness_zones.sqlite')
-    except sqlite3.error, e:
-        print "Count not connect to SQLite, with error %s:" % e.args[0]
-        sys.exit(1)
+    with open('combined_zipcodes.csv', 'r') as zipcodes:
+        zipcode_to_location = {
+            i['zipcode']: Coordinates(lat=i['latitude'], lon=i['longitude'])
+            for i in DictReader(zipcodes)}
 
-    # See if we already have the source data.
-    source_data = 'zones.csv'
-    if os.path.isfile('zones.csv'):
-        pass
+    # See if we already have the source data, otherwise retrieve from PRISM website
+    if os.path.isfile(zones_filename := 'zones.csv'):
+        with open(zones_filename, 'rb') as zones:
+            zip_to_zone = make_zip_to_zone_dict(
+                zones.readlines(), zipcode_to_location)
     else:
-        sources = ['http://www.prism.oregonstate.edu/projects/public/phm/phm_us_zipcode.csv',
-                    'http://www.prism.oregonstate.edu/projects/public/phm/phm_ak_zipcode.csv',
-                    'http://www.prism.oregonstate.edu/projects/public/phm/phm_hi_zipcode.csv',
-                    'http://www.prism.oregonstate.edu/projects/public/phm/phm_pr_zipcode.csv']
-        zonefile = urllib.URLopener()
-        i=1
-        for source in sources:
-            try:
-                zonefile.retrieve(source, str(i) + '.csv')
-            except Exception,e:
-                print "Fatal error: Could not download source file. ", e
-                sys.exit()
-            i += 1
+        zip_to_zone = {k: v for zf in zone_files for k,
+                       v in zone_uris_to_dict(zf, zipcode_to_location).items()}
 
-    # Create a SQLite cursor.
-    cursor = db.cursor()
+    print(
+        f"number of zipcodes with no PHZ data: {len(zipcode_to_location.keys() - zip_to_zone.keys())}")
+    print(
+        f"zipcodes with PHZ data but no location: {zip_to_zone.keys() - zipcode_to_location.keys()}")
 
-    # See if the zip database table already exists.
-    cursor.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='zip'")
-    exists = cursor.fetchone()
+    os.makedirs('api', exist_ok=True)
 
-    # If the database table doesn't exist, create it.
-    if exists is None:
-        cursor.execute("CREATE TABLE zip(zipcode TEXT PRIMARY KEY NOT NULL, "
-            + "zone TEXT, temperatures TEXT, city TEXT, state TEXT, latitude INTEGER, longitude INTEGER)")
-        db.commit()
+    # output only the zipcodes for which we have coordinates
+    for zipcode, data in ((z, d) for z, d in zip_to_zone.items() if d.coordinates):
+        with open(f"api/{zipcode}.json", 'w') as file:
+            file.write(json.dumps(data, cls=CustomJSONEncoder))
 
-        # Import the CSV file into the database
-        with open('zipcodes.csv','rb') as zips:
-            dr = csvkit.DictReader(zips)
-            to_db = [(i['zipcode'], i['city'], i['state'], i['latitude'], i['longitude']) for i in dr]
-        cursor.executemany("INSERT INTO zip (zipcode, city, state, latitude, longitude) VALUES (?, ?, ?, ?, ?);", to_db)
-        db.commit()
-
-    # Now load our climate data.
-    zone_files = [1, 2, 3, 4]
-    for zone_file in zone_files:
-        with open(str(zone_file) + '.csv','rb') as zips:
-            dr = csvkit.DictReader(zips)
-            to_db = [(i['zone'], i['trange'], i['zipcode']) for i in dr]
-        cursor.executemany("UPDATE zip SET zone=?, temperatures=? WHERE zipcode=?;", to_db)
-        db.commit()
-        os.remove(str(zone_file) + '.csv')
-
-    # Close our database connection.
-    db.close()
-
-
-# Export the results to JSON, to create a static API.
-def create_api():
-
-    # Connect to the database, which we already know exists.
-    db = sqlite3.connect('hardiness_zones.sqlite')
-    db.row_factory = sqlite3.Row
-
-    # Create a SQLite cursor.
-    cursor = db.cursor()
-
-    # Create the /api/ directory, if it doesn't exist.
-    if not os.path.exists('api'):
-        os.makedirs('api')
-
-    # Iterate through all records.
-    cursor.execute("SELECT zipcode, zone, temperatures, latitude, longitude FROM zip")
-    for zip in cursor:
-
-        # Save the record to a file.
-        file = open("api/" + zip['zipcode'] + ".json", 'w')
-
-        # Hideously manipulate the dict.
-        record = dict()
-        record['coordinates'] = dict()
-        record['coordinates']['lat'] = zip['latitude']
-        record['coordinates']['lon'] = zip['longitude']
-        record['zone'] = zip['zone']
-        record['temperature_range'] = zip['temperatures']
-
-        # Write the contents and close the file.
-        file.write(json.dumps(record))
-        file.close()
 
 if __name__ == "__main__":
     main()
-    create_api()
+
+
+# utility to combine the partial zipcode location csv files
+def combine_zipcode_files():
+    # create a base dict of zipcode locations with this dataset
+    with open('zipcodes.csv', 'r') as zipcodes:
+        zipcode_to_location = {
+            i['zipcode']: Coordinates(lat=i['latitude'], lon=i['longitude'])
+            for i in DictReader(zipcodes)}
+
+    # overwrite any zipcodes in that dataset with this more reliable (but still incomplete) one
+    with open('us-zip-code-latitude-and-longitude.csv', 'r') as zipcodes:
+        zipcode_to_location.update({
+            i['Zip']: Coordinates(lat=i['Latitude'], lon=i['Longitude'])
+            for i in DictReader(zipcodes, delimiter=';')})
+
+    with open('combined_zipcodes.csv', 'w', newline='') as csvfile:
+        fieldnames = ['zipcode', 'latitude', 'longitude']
+        writer = DictWriter(csvfile, fieldnames=fieldnames)
+
+        writer.writeheader()
+        for zipcode, coords in zipcode_to_location.items():
+            writer.writerow(
+                {fieldnames[0]: zipcode, fieldnames[1]: coords.lat, fieldnames[2]: coords.lon})
