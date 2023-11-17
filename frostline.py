@@ -66,6 +66,8 @@ def main():
 
     print(
         f"number of zipcodes with no PHZ data: {len(zipcode_to_location.keys() - zip_to_zone.keys())}")
+    # Save this as an environment variable for use in a test
+    os.environ['FROSTLINE_NULL_ZIPS'] = str(len(zipcode_to_location.keys() - zip_to_zone.keys()))
     print(
         f"zipcodes with PHZ data but no location: {zip_to_zone.keys() - zipcode_to_location.keys()}")
 
