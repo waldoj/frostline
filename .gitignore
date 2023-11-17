@@ -1,3 +1,4 @@
 api/
 zones.csv
 *.sqlite
+.DS_Store
