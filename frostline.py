@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 import os
@@ -9,10 +9,10 @@ from csv import DictReader, DictWriter
 from contextlib import closing
 
 zone_files = [
-    'http://www.prism.oregonstate.edu/projects/public/phm/phm_us_zipcode.csv',
-    'http://www.prism.oregonstate.edu/projects/public/phm/phm_ak_zipcode.csv',
-    'http://www.prism.oregonstate.edu/projects/public/phm/phm_hi_zipcode.csv',
-    'http://www.prism.oregonstate.edu/projects/public/phm/phm_pr_zipcode.csv'
+    'https://prism.oregonstate.edu/projects/phm_data/phzm_us_zipcode_2023.csv',
+    'https://prism.oregonstate.edu/projects/phm_data/phzm_ak_zipcode_2023.csv',
+    'https://prism.oregonstate.edu/projects/phm_data/phzm_hi_zipcode_2023.csv',
+    'https://prism.oregonstate.edu/projects/phm_data/phzm_pr_zipcode_2023.csv'
 ]
 
 
