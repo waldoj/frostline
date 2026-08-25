@@ -127,6 +127,15 @@ def write_bulk_files(records, uncovered_count):
 
     print(f"wrote bulk files for {len(records)} zipcodes")
 
+
+def copy_website_files():
+    """Copy the static homepage and error document into api/ for deployment."""
+    for filename in ('index.html', 'error-404.json'):
+        source = os.path.join('website', filename)
+        if os.path.isfile(source):
+            shutil.copyfile(source, os.path.join('api', filename))
+
+
 def main():
 
     with open('combined_zipcodes.csv', 'r') as zipcodes:
@@ -151,11 +160,16 @@ def main():
     os.makedirs('api', exist_ok=True)
 
     # output only the zipcodes for which we have coordinates
-    for zipcode, data in ((z, d) for z, d in zip_to_zone.items() if d.coordinates):
+    records = sorted(((z, d) for z, d in zip_to_zone.items() if d.coordinates),
+                     key=lambda pair: pair[0])
+
+    for zipcode, data in records:
         with open(f"api/{zipcode}.json", 'w') as file:
             file.write(json.dumps(data, cls=CustomJSONEncoder))
 
     write_bulk_files(records, null_zips)
+    copy_website_files()
+
 
 if __name__ == "__main__":
     main()

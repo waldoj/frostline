@@ -1,54 +1,158 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Plant Hardiness Zone Map API</title>
-<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" type="text/css" media="screen" />
+<meta name="description" content="A free, static JSON API for USDA plant hardiness zones by U.S. ZIP code." />
 <style>
-	#json {
-		clear: left;
-		background-color: #eee;
-		padding: 1em;
-		width: 50%;
-		min-width: 200px;
-		border: 1px solid #999;
-		margin-top: 2em;
-		display: none;
-		font-family: monospace;
+	:root { --ink: #1a1a1a; --muted: #5c5c5c; --rule: #d8d8d8; --bg: #fdfdfb; --code-bg: #f4f4f1; }
+	* { box-sizing: border-box; }
+	body {
+		font: 16px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+		color: var(--ink); background: var(--bg);
+		max-width: 46rem; margin: 0 auto; padding: 2rem 1.25rem 4rem;
 	}
+	h1 { font-size: 1.9rem; margin: 0 0 .25rem; letter-spacing: -.02em; }
+	h2 { font-size: 1.15rem; margin: 2.5rem 0 .75rem; padding-bottom: .3rem; border-bottom: 1px solid var(--rule); }
+	.tagline { color: var(--muted); margin: 0 0 2rem; font-size: 1.05rem; }
+	code, pre { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: .875rem; }
+	code { background: var(--code-bg); padding: .12em .35em; border-radius: 3px; }
+	pre { background: var(--code-bg); padding: .9rem 1rem; border-radius: 5px; overflow-x: auto; border: 1px solid var(--rule); }
+	pre code { background: none; padding: 0; }
+	a { color: #1157a8; }
+	table { border-collapse: collapse; width: 100%; margin: .5rem 0; }
+	th, td { text-align: left; padding: .5rem .6rem; border-bottom: 1px solid var(--rule); vertical-align: top; }
+	th { font-size: .78rem; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+	td:first-child { white-space: nowrap; }
+	form { display: flex; gap: .5rem; align-items: center; flex-wrap: wrap; margin: .5rem 0 0; }
+	input { font: inherit; padding: .45rem .6rem; border: 1px solid #bbb; border-radius: 4px; width: 7rem; }
+	button { font: inherit; padding: .45rem 1rem; border: 1px solid #1157a8; background: #1157a8; color: #fff; border-radius: 4px; cursor: pointer; }
+	button:hover { background: #0d4585; }
+	#result { margin-top: .9rem; display: none; }
+	.note { color: var(--muted); font-size: .9rem; }
+	.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+	footer { margin-top: 3rem; padding-top: 1rem; border-top: 1px solid var(--rule); color: var(--muted); font-size: .875rem; }
 </style>
 </head>
-
 <body>
 
 <header>
 	<h1>Plant Hardiness Zone Map API</h1>
+	<p class="tagline">A free, static JSON API for USDA plant hardiness zones, by U.S. ZIP code.</p>
 </header>
 
 <main>
 
-	<p>Queries in format <code>https://phzmapi.org/ZIPCODE.json</code>, e.g.
-		<code><a href="https://phzmapi.org/20001.json">https://phzmapi.org/20001.json</a></code>.
-		<a href="https://github.com/waldoj/frostline/">Details on the GitHub repo</a>.</p>
-	<form>
-		<label for="zip">ZIP Code</label>
-		<input type="text" size="5" id="zip" maxlength="5" pattern="[0-9]{5}" />
-		<button type="button" id="submit">Submit</button>
-		<div id="json"></div>
+	<h2>Look up a ZIP code</h2>
+	<form id="lookup">
+		<label for="zip" class="sr-only">ZIP Code</label>
+		<input type="text" inputmode="numeric" id="zip" maxlength="5" pattern="[0-9]{5}"
+			placeholder="20001" aria-label="ZIP Code" />
+		<button type="submit">Look up</button>
 	</form>
+	<pre id="result"><code></code></pre>
+
+	<h2>Endpoints</h2>
+	<table>
+		<thead>
+			<tr><th>URL</th><th>Description</th></tr>
+		</thead>
+		<tbody>
+			<tr>
+				<td><a href="/20001.json"><code>/{zipcode}.json</code></a></td>
+				<td>Zone, temperature range, and coordinates for one ZIP code.</td>
+			</tr>
+			<tr>
+				<td><a href="/all.json"><code>/all.json</code></a></td>
+				<td>The entire dataset as a single JSON object, keyed by ZIP code.</td>
+			</tr>
+			<tr>
+				<td><a href="/all.csv"><code>/all.csv</code></a></td>
+				<td>The entire dataset as CSV.</td>
+			</tr>
+			<tr>
+				<td><a href="/manifest.json"><code>/manifest.json</code></a></td>
+				<td>Metadata and the full list of covered ZIP codes.</td>
+			</tr>
+		</tbody>
+	</table>
+	<p class="note">Please use the bulk files rather than iterating over every ZIP code.</p>
+
+	<h2>Example response</h2>
+	<p><code>GET https://phzmapi.org/20001.json</code></p>
+<pre><code>{
+  "zone": "8a",
+  "temperature_range": "10 to 15",
+  "coordinates": {
+    "lat": "38.907711",
+    "lon": "-77.01732"
+  }
+}</code></pre>
+	<p class="note">In the per-ZIP files, coordinates are strings, for backwards
+		compatibility. In <code>all.json</code> they are numbers.</p>
+
+	<h2>Coverage</h2>
+	<p><strong>Not every U.S. ZIP code is in this dataset.</strong> The source data
+		does not include every ZIP code, and ZIP codes with no known coordinates are
+		omitted. Requesting a ZIP code that isn't covered returns a
+		<code>404</code>. To check coverage in advance, use
+		<a href="/manifest.json"><code>manifest.json</code></a>.</p>
+
+	<h2>Data source</h2>
+	<p>Derived from the USDA Plant Hardiness Zone Map, as published in bulk by
+		<a href="https://prism.oregonstate.edu/phzm/">the PRISM Climate Group</a>
+		at Oregon State University, combined with ZIP code location data.</p>
+	<p><strong>Source vintage: 2023 release.</strong> The 2023 revision shifted
+		much of the country by half a zone relative to the 2012 map, so check this
+		before comparing against older data. Per PRISM's terms of service, this is
+		not the official USDA Plant Hardiness Zone Map.</p>
+
+	<h2>Terms</h2>
+	<p>Free to use, no key or attribution required, no rate limit. Served as
+		static files, so please cache responses where you reasonably can.
+		The code is MIT-licensed and available
+		<a href="https://github.com/waldoj/frostline/">on GitHub</a>.</p>
+
 </main>
 
-<script src="https://code.jquery.com/jquery-3.3.1.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous"></script>
+<footer>
+	<p>Built by <a href="https://github.com/waldoj/frostline/">Frostline</a>.
+		Issues and pull requests welcome.</p>
+</footer>
+
 <script>
-	$(document).ready(function(event) {
-		$("#submit").on('click', function() {
-			zip = $("#zip").val();
-			$.getJSON( "https://phzmapi.org/" + zip + ".json", function( data ) {
-				json = JSON.stringify(data);
-				$("#json").html(json);
-				$("#json").show();
-			});
+	(function () {
+		var form = document.getElementById('lookup');
+		var input = document.getElementById('zip');
+		var result = document.getElementById('result');
+		var output = result.querySelector('code');
+
+		form.addEventListener('submit', function (event) {
+			event.preventDefault();
+			var zip = input.value.trim();
+			if (!/^[0-9]{5}$/.test(zip)) {
+				output.textContent = 'Please enter a five-digit ZIP code.';
+				result.style.display = 'block';
+				return;
+			}
+			fetch('/' + zip + '.json')
+				.then(function (response) {
+					if (!response.ok) {
+						throw new Error('ZIP code ' + zip + ' is not included in this dataset.');
+					}
+					return response.json();
+				})
+				.then(function (data) {
+					output.textContent = JSON.stringify(data, null, 2);
+					result.style.display = 'block';
+				})
+				.catch(function (error) {
+					output.textContent = error.message;
+					result.style.display = 'block';
+				});
 		});
-	});
+	})();
 </script>
 </body>
 </html>
