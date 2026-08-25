@@ -3,6 +3,7 @@
 
 import os
 import json
+import shutil
 import requests
 from codecs import iterdecode
 from csv import DictReader, DictWriter
@@ -54,6 +55,78 @@ def zone_uris_to_dict(url, zipcode_to_location):
         return make_zip_to_zone_dict(iterdecode(r.iter_lines(), 'utf-8'), zipcode_to_location)
 
 
+def write_bulk_files(records, uncovered_count):
+    """Write the bulk dataset and the coverage manifest into api/.
+
+    `records` is a sorted list of (zipcode, ZipData) for ZIPs that have both
+    PHZ data and coordinates -- i.e. exactly the ZIPs that get a .json file.
+
+    Coordinates are emitted as floats here, unlike the per-ZIP files, which
+    keep them as strings for backwards compatibility.
+    """
+    generated = datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
+
+    # all.json -- one object keyed by ZIP code
+    bulk = {
+        zipcode: {
+            'zone': data.zone,
+            'temperature_range': data.temperature_range,
+            'coordinates': {
+                'lat': float(data.coordinates.lat),
+                'lon': float(data.coordinates.lon),
+            },
+        }
+        for zipcode, data in records
+    }
+    with open('api/all.json', 'w') as file:
+        json.dump({
+            'source': 'USDA Plant Hardiness Zone Map, via PRISM Climate Group',
+            'source_url': SOURCE_URL,
+            'source_vintage': SOURCE_VINTAGE,
+            'generated': generated,
+            'license': 'MIT',
+            'count': len(bulk),
+            'zipcodes': bulk,
+        }, file)
+
+    # all.csv -- flat table for spreadsheet and stats users
+    with open('api/all.csv', 'w', newline='') as csvfile:
+        writer = DictWriter(
+            csvfile,
+            fieldnames=['zipcode', 'zone', 'temperature_range', 'latitude', 'longitude'])
+        writer.writeheader()
+        for zipcode, data in records:
+            writer.writerow({
+                'zipcode': zipcode,
+                'zone': data.zone,
+                'temperature_range': data.temperature_range,
+                'latitude': data.coordinates.lat,
+                'longitude': data.coordinates.lon,
+            })
+
+    # manifest.json -- metadata plus the full list of covered ZIPs, so that
+    # clients can check coverage without making 40,000 requests
+    with open('api/manifest.json', 'w') as file:
+        json.dump({
+            'source': 'USDA Plant Hardiness Zone Map, via PRISM Climate Group',
+            'source_url': SOURCE_URL,
+            'source_vintage': SOURCE_VINTAGE,
+            'generated': generated,
+            'license': 'MIT',
+            'repository': 'https://github.com/waldoj/frostline',
+            'endpoints': {
+                'zipcode': 'https://phzmapi.org/{zipcode}.json',
+                'bulk_json': 'https://phzmapi.org/all.json',
+                'bulk_csv': 'https://phzmapi.org/all.csv',
+                'manifest': 'https://phzmapi.org/manifest.json',
+            },
+            'count': len(records),
+            'zipcodes_without_phz_data': uncovered_count,
+            'zipcodes': [zipcode for zipcode, _ in records],
+        }, file)
+
+    print(f"wrote bulk files for {len(records)} zipcodes")
+
 def main():
 
     with open('combined_zipcodes.csv', 'r') as zipcodes:
@@ -84,6 +157,7 @@ def main():
         with open(f"api/{zipcode}.json", 'w') as file:
             file.write(json.dumps(data, cls=CustomJSONEncoder))
 
+    write_bulk_files(records, null_zips)
 
 if __name__ == "__main__":
     main()
