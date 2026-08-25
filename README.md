@@ -1,10 +1,23 @@
 # Frostline
 
-A parser for USDA plant hardiness zones. That data is provided in bulk by [the PRISM Climate Group at Oregon State University](http://www.prism.oregonstate.edu/projects/plant_hardiness_zones.php). This combines the four bulk files with ZIP location data, and creates a JSON file for each ZIP, functioning as a static API.
+A parser for USDA plant hardiness zones. That data is provided in bulk by [the PRISM Climate Group at Oregon State University](https://prism.oregonstate.edu/phzm/). This combines the four bulk files with ZIP location data, and creates a JSON file for each ZIP, functioning as a static API.
 
 Note that _not every U.S. ZIP code is part of this dataset._ The PHZ source data, provided by PRISM, does not include every ZIP, and there is no complete list of the location of all ZIP codes in the PHZ source data.
 
 The resulting data is used to create an API at phzmapi.org, in format `{ZIPCODE}.json`, e.g. [`https://phzmapi.org/20001.json`](https://phzmapi.org/20001.json).
+
+## Endpoints
+
+| URL | Description |
+| --- | --- |
+| [`/{zipcode}.json`](https://phzmapi.org/20001.json) | Zone, temperature range, and coordinates for one ZIP code. |
+| [`/all.json`](https://phzmapi.org/all.json) | The entire dataset as a single JSON object, keyed by ZIP code. |
+| [`/all.csv`](https://phzmapi.org/all.csv) | The entire dataset as CSV. |
+| [`/manifest.json`](https://phzmapi.org/manifest.json) | Metadata and the full list of covered ZIP codes. |
+
+Please use the bulk files rather than iterating over every ZIP code.
+
+Note that coordinates are strings in the per-ZIP files, for backwards compatibility, but numbers in `all.json`.
 
 ![Map of the U.S.](https://cloud.githubusercontent.com/assets/656758/8011208/c1b7ea48-0b84-11e5-967b-a496cdfe0fe0.jpg)
 
