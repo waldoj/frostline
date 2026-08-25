@@ -7,12 +7,18 @@ import requests
 from codecs import iterdecode
 from csv import DictReader, DictWriter
 from contextlib import closing
+from datetime import datetime, timezone
+
+# The vintage of the USDA/PRISM source data. Surfaced in manifest.json and on
+# the homepage so consumers can tell 2012 zones from 2023 zones.
+SOURCE_VINTAGE = '2023'
+SOURCE_URL = 'https://prism.oregonstate.edu/phzm/'
 
 zone_files = [
-    'https://prism.oregonstate.edu/projects/phm_data/phzm_us_zipcode_2023.csv',
-    'https://prism.oregonstate.edu/projects/phm_data/phzm_ak_zipcode_2023.csv',
-    'https://prism.oregonstate.edu/projects/phm_data/phzm_hi_zipcode_2023.csv',
-    'https://prism.oregonstate.edu/projects/phm_data/phzm_pr_zipcode_2023.csv'
+    'https://prism.oregonstate.edu/phzm/data/2023/phzm_us_zipcode_2023.csv',
+    'https://prism.oregonstate.edu/phzm/data/2023/phzm_ak_zipcode_2023.csv',
+    'https://prism.oregonstate.edu/phzm/data/2023/phzm_hi_zipcode_2023.csv',
+    'https://prism.oregonstate.edu/phzm/data/2023/phzm_pr_zipcode_2023.csv'
 ]
 
 
